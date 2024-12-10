@@ -64,7 +64,9 @@ O **Multiton** é uma variação do Singleton que permite a existência de **mú
   - Conexões a diferentes bancos de dados.
   - Configurações específicas para diferentes ambientes.
 
-#### **Exemplo de Código em Java: Multiton**
+#### **Exemplos de Códigos em Java: Multiton**
+
+##### Exemplo 1
 
 ```java
 import java.util.HashMap;
@@ -112,7 +114,13 @@ public class Main {
     }
 }
 ```
+#### Exemplo 2 - ENUM
 
+ - Tendo em vista que, o Enum é imutavel (em java) ele se enquadra como outro exemplo do padrão Multiton, uma vez que, cada constante de enum é, na prática, uma instância estática e única da própria classe. As instancias de enuns são estabelecidas em tempo de execução.
+
+```Java
+
+```
 ---
 
 ### **Diferenças Entre Singleton e Multiton**
