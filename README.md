@@ -20,6 +20,135 @@ Em alguns cenários, é necessário ter uma única instância de uma classe em t
 - **Problema**: O sistema de logs precisa de uma instância única de uma classe `Logger` para registrar todas as mensagens de log. Ter várias instâncias de `Logger` pode gerar conflitos de acesso e performance.
 - **Solução com Singleton**: O padrão Singleton garante que apenas uma instância do `Logger` exista, e ela pode ser acessada de qualquer parte do código.
 
+### Exemplo Jogo 
+
+ - **Problema**:
+ - **Solução com Singleton**:
+
+-- script do player (bola roxa) --
+```C#
+    using UnityEngine;
+
+public class Player : MonoBehaviour
+{
+    // Singleton
+    public static Player Instance { get; private set; }
+
+    // Atributos do player
+    public int moedas { get; private set; } = 0;
+    public int vida { get; private set; } = 100;
+
+    public float velocidade = 5f; // Velocidade de movimento do player
+    private Vector3 spawnPoint;  // Ponto de ressurgimento
+
+    private Rigidbody2D rb; // Rigidbody2D para movimento físico
+
+    private void Awake()
+    {
+        // Garantir Singleton
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // Persistir entre cenas
+        }
+        else
+        {
+            Destroy(gameObject); // Evitar múltiplas instâncias
+        }
+    }
+
+    private void Start()
+    {
+        spawnPoint = transform.position; // Salvar o ponto inicial como ponto de ressurgimento
+        rb = GetComponent<Rigidbody2D>(); // Obter referência ao Rigidbody2D
+    }
+
+    private void Update()
+    {
+        // Capturar entrada do teclado e movimentar o player
+        Mover();
+    }
+
+    // Método para movimentar o player
+    private void Mover()
+    {
+        float horizontal = Input.GetAxis("Horizontal"); // Entrada nas setas/A-D
+        float vertical = Input.GetAxis("Vertical");     // Entrada nas setas/W-S
+
+        Vector2 movimento = new Vector2(horizontal, vertical) * velocidade;
+        rb.velocity = movimento; // Aplicar movimento ao Rigidbody2D
+    }
+
+    // Atualizar as moedas
+    public void ColetarMoeda(int quantidade)
+    {
+        moedas += quantidade;
+        Debug.Log("Moedas coletadas: " + moedas);
+    }
+
+    // Lidar com dano
+    public void ReceberDano(int dano)
+    {
+        vida -= dano;
+        if (vida <= 0)
+        {
+            Morrer();
+        }
+    }
+
+    // Morrer e ressurgir
+    private void Morrer()
+    {
+        Debug.Log("Player morreu!");
+        vida = 100; // Restaurar vida
+        Ressurgir();
+    }
+
+    private void Ressurgir()
+    {
+        transform.position = spawnPoint; // Voltar para o ponto de spawn
+        Debug.Log("Player ressurgiu com " + moedas + " moedas.");
+    }
+}
+```
+-- script da moeda (bola amarela) --
+
+```C#
+using UnityEngine;
+
+public class Moeda : MonoBehaviour
+{
+    public int valor = 1;
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            Player.Instance.ColetarMoeda(valor);
+            Destroy(gameObject); // Destruir moeda após coletar
+        }
+    }
+}
+```
+
+--script do inimigo (hexágono vermelho)--
+
+```C#
+using UnityEngine;
+
+public class Inimigo : MonoBehaviour
+{
+    public int dano = 100;
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            Player.Instance.ReceberDano(dano);
+        }
+    }
+}
+```
 ### Problema Resolvido pelo Multiton
 
 Quando se precisa de várias instâncias de uma classe, mas cada uma com um contexto único (por exemplo, um banco de dados diferente ou configuração de log por módulo), o **Multiton** é necessário. Diferente do Singleton, o Multiton cria instâncias separadas para diferentes chaves, garantindo que não se criem instâncias desnecessárias ou repetidas.
