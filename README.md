@@ -474,7 +474,10 @@ public class Inimigo : MonoBehaviour
 
 
 #### Diagrama UML:
-```nermaid
+```mermaid
+---
+title: Multiton Tax Calculation
+---
 classDiagram
     class TaxCalculation {
         <<interface>>
@@ -492,7 +495,7 @@ classDiagram
         + CENTRAL
         - Map~TaxRegion, TaxCalculation~ instances
         - Map~String, Float~ regionalData
-        - synchronized static TaxCalculation getInstance(TaxRegion region)
+        + synchronized static TaxCalculation getInstance(TaxRegion region)
         - TaxCalculation loadRegionalDataFromRemoteServer()
         + float calculateSalesTax(SaleData data)
         + float calculateLandTax(LandData data)
@@ -510,19 +513,25 @@ classDiagram
         + float getLandValue()
     }
 
-    TaxRegion -->|implements| TaxCalculation
-    TaxRegion --> "1..*" Map : instances
-    TaxRegion --> "1..*" Map : regionalData
-    SaleData --> TaxRegion : usa
-    LandData --> TaxRegion : usa
+    %% Relacionamentos
+    TaxRegion o-- "1..*" TaxCalculation : instances
+    TaxRegion ..> "1..*" Map : regionalData
+
+    TaxRegion --> TaxCalculation : implements
+    TaxCalculation <|.. TaxRegion
+
+    SaleData --> TaxRegion : usado por
+    LandData --> TaxRegion : usado por
+
 ```
 #### Diagrama de fluxo 
 
-```nermaid
-    participante Cliente
-    participante TaxRegion
-    participante ServidorRemoto
-    participante SaleData
+```mermaid
+sequenceDiagram
+    participant Cliente
+    participant TaxRegion
+    participant ServidorRemoto
+    participant SaleData
     
     Cliente->>+TaxRegion: getInstance(NORTH)
     alt Se a instância de NORTH não existir
@@ -534,7 +543,6 @@ classDiagram
     Cliente->>TaxRegion: calculateSalesTax(SaleData)
     TaxRegion->>TaxRegion: Obtém "salesTaxRate" de regionalData
     TaxRegion-->>Cliente: Valor do imposto de vendas
-
 ```
 
 #### Interface
