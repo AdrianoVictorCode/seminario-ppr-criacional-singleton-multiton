@@ -80,31 +80,208 @@ classDiagram
 
 ```java
 public class SemSingleton {
-    //exemplo de codigo sem singleton
+    public class Logger {
+    private String nomeArquivo;
+
+    public Logger(String nomeArquivo) {
+        this.nomeArquivo = nomeArquivo;
+    }
+
+    public void log(String mensagem) {
+        System.out.println("Escrevendo no arquivo " + nomeArquivo + ": " + mensagem);
+        // Simulando escrita no arquivo (sem implementar realmente)
+    }
+}
+
+public class Aplicacao {
+    public static void main(String[] args) {
+        // Criando múltiplas instâncias do Logger
+        Logger logger1 = new Logger("log1.txt");
+        Logger logger2 = new Logger("log2.txt");
+
+        // PROBLEMA 1: Logs inconsistentes
+        // Cada instância escreve em um arquivo diferente. Se o sistema
+        // depende de um único arquivo centralizado, isso causa confusão.
+        logger1.log("Primeira mensagem de logger1");
+        logger2.log("Primeira mensagem de logger2");
+
+        // PROBLEMA 2: Conflito de arquivos
+        // Se várias instâncias tentarem gravar no mesmo arquivo, dados podem ser corrompidos.
+        Logger logger3 = new Logger("log1.txt");
+        logger3.log("Mensagem de logger3");
+
+        // PROBLEMA 3: Perda de centralização
+        // Não há um único ponto de acesso ao Logger. Alterar configurações em uma
+        // instância (ex.: mudar o arquivo de log) não afeta as outras instâncias.
+
+        // PROBLEMA 4: Sobrecarga de recursos
+        // Criar muitas instâncias pode consumir memória desnecessariamente
+        // e aumentar a complexidade do sistema.
+    }
+}
+
 }
 ```
 
 ### Com Singleton:
 
 ```java
-public class Singleton {
-   //exemplo de codigo com singleton 
+// Implementação de um Logger usando Singleton para resolver problemas anteriores
+public class Logger {
+    private static Logger instanciaUnica; // Garantindo uma única instância
+    private String nomeArquivo;
+
+    // Construtor privado para evitar criação de múltiplas instâncias
+    private Logger(String nomeArquivo) {
+        this.nomeArquivo = nomeArquivo;
+    }
+
+    static {
+        instanciaUnica = new Logger("logCentral.txt");
+    }
+
+    // Método público para obter a única instância do Logger
+    public static Logger getInstance() {
+        return instanciaUnica;
+    }
+
+    public void log(String mensagem) {
+        System.out.println("Escrevendo no arquivo " + nomeArquivo + ": " + mensagem);
+        // Simulando escrita no arquivo (sem implementação real para simplicidade)
+    }
+
+    public static void main(String[] args) {
+        // Obtendo a única instância do Logger
+        System.out.println(Logger.getInstance());
+
+        // PROBLEMA 1 RESOLVIDO: Logs consistentes
+        // Todos os logs são centralizados em um único arquivo
+        Logger.getInstance().log("Primeira mensagem de log");
+        Logger.getInstance().log("Segunda mensagem de log");
+
+        // PROBLEMA 2 RESOLVIDO: Conflito de arquivos
+        // Como não há outro arquivo, o log é escrito no arquivo original
+        Logger.getInstance().log("Terceira mensagem de log");
+
+        // PROBLEMA 3 RESOLVIDO: Centralização
+        // O acesso ao Logger é feito por meio do método `getInstance`, garantindo
+        // que alterações na configuração (como nome do arquivo) sejam feitas na
+        // instância única.
+
+        // PROBLEMA 4 RESOLVIDO: Economia de recursos
+        // Apenas uma instância do Logger é criada, reduzindo consumo de memória.
+    }
 }
+
 ```
 
 ### Sem Multiton:
 
 ```java
-public class SemMultiton {
-    //exemplo de codigo sem Multiton
+import java.util.HashMap;
+import java.util.Map;
+
+public class ConfiguracaoSemMultiton {
+    private String modulo;
+    private Map<String, String> configuracoes;
+
+    public ConfiguracaoSemMultiton(String modulo) {
+        this.modulo = modulo;
+        this.configuracoes = new HashMap<>();
+    }
+
+    public void adicionarConfiguracao(String chave, String valor) {
+        configuracoes.put(chave, valor);
+    }
+
+    public String obterConfiguracao(String chave) {
+        return configuracoes.get(chave);
+    }
+
+    public String getModulo() {
+        return modulo;
+    }
+
+    public static void main(String[] args) {
+        // Criando instâncias separadas para diferentes módulos
+        ConfiguracaoSemMultiton configPagamento = new ConfiguracaoSemMultiton("Pagamento");
+        configPagamento.adicionarConfiguracao("endpoint", "https://api.pagamentos.com");
+        configPagamento.adicionarConfiguracao("timeout", "30s");
+
+        ConfiguracaoSemMultiton configRelatorio = new ConfiguracaoSemMultiton("Relatorio");
+        configRelatorio.adicionarConfiguracao("endpoint", "https://api.relatorios.com");
+        configRelatorio.adicionarConfiguracao("timeout", "60s");
+
+        // Problema 1: Instâncias duplicadas podem ser criadas para o mesmo módulo
+        ConfiguracaoSemMultiton configPagamentoDuplicado = new ConfiguracaoSemMultiton("Pagamento");
+        configPagamentoDuplicado.adicionarConfiguracao("timeout", "15s");
+
+        // Problema 2: Não há controle centralizado das instâncias
+        System.out.println("Timeout do módulo Pagamento (instância 1): " + configPagamento.obterConfiguracao("timeout"));
+        System.out.println("Timeout do módulo Pagamento (instância duplicada): " + configPagamentoDuplicado.obterConfiguracao("timeout"));
+
+        // Problema 3: Difícil garantir que cada módulo tenha uma única configuração global
+        System.out.println("Endpoint do módulo Relatorio: " + configRelatorio.obterConfiguracao("endpoint"));
+    }
 }
+
 ```
 
 ### Com Multiton:
 
 ```java
-public class ComMultiton {
-    //exemplo de codigo com Multiton
+import java.util.HashMap;
+import java.util.Map;
+
+public class ConfiguracaoComMultiton {
+    private static final Map<String, ConfiguracaoComMultiton> INSTANCIAS = new HashMap<>();
+
+    private Map<String, String> configuracoes;
+
+    // Construtor privado para evitar instância externa
+    private ConfiguracaoComMultiton() {
+        this.configuracoes = new HashMap<>();
+    }
+
+    static {
+        INSTANCIAS.put("Pagamento", new ConfiguracaoComMultiton());
+
+        INSTANCIAS.put("Relatorio", new ConfiguracaoComMultiton());
+    }
+
+    // Método estático para obter a instância única de cada módulo
+    public static ConfiguracaoComMultiton getInstance(String modulo) {
+        return INSTANCIAS.get(modulo);
+    }
+
+    public void adicionarConfiguracao(String chave, String valor) {
+        configuracoes.put(chave, valor);
+    }
+
+    public String obterConfiguracao(String chave) {
+        return configuracoes.get(chave);
+    }
+
+    public static Integer getSizeInstancias() {
+        return INSTANCIAS.size();
+    }
+
+    public static void main(String[] args) {
+
+        // Garantindo que sempre obtemos a mesma instância para um módulo
+        ConfiguracaoComMultiton configPagamentoRef = ConfiguracaoComMultiton.getInstance("Pagamento");
+        configPagamentoRef.adicionarConfiguracao("timeout", "30s");
+        System.out.println("Timeout do módulo Pagamento (única instância): " + configPagamentoRef.obterConfiguracao("timeout"));
+   
+        // Sem duplicação de instâncias
+        ConfiguracaoComMultiton configRelatorioRef = ConfiguracaoComMultiton.getInstance("Relatorio");
+        configRelatorioRef.adicionarConfiguracao("endpoint", "/api/relatorio");
+        System.out.println("Endpoint do módulo Relatorio: " + configRelatorioRef.obterConfiguracao("endpoint"));
+   
+        // Todas as instâncias são controladas centralmente pelo Multiton
+        System.out.println("Número de módulos registrados: " + ConfiguracaoComMultiton.getSizeInstancias());
+    }
+   
 }
 ```
 
