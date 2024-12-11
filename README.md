@@ -40,26 +40,43 @@ Quando se precisa de várias instâncias de uma classe, mas cada uma com um cont
 
 ```mermaid
 ---
-title: Singleton Example
+title: Singleton Logger Exemplo
 ---
 classDiagram
-    Singleton <|-- Logger
-    Singleton : +getInstance()
-    Logger : -instance
-    Logger : +log(message)
+    class Logger {
+        - static Logger instanciaUnica
+        - String nomeArquivo
+        - Logger(String nomeArquivo)
+        + static Logger getInstance()
+        + void log(String mensagem)
+        + static void main(String[] args)
+    }
+
+    Logger o-- "1" logger : instanciaUnica
 ```
 
 ### Diagrama UML do Multiton:
 
 ```mermaid
 ---
-title: Multiton Example
+title: Multiton Configuração Exemplo
 ---
 classDiagram
-    Multiton <|-- Logger
-    Multiton : +getInstance(key)
-    Logger : -instances
-    Logger : +log(message)
+    class ConfiguracaoComMultiton {
+        - Map<String, ConfiguracaoComMultiton> INSTANCIAS
+        - Map<String, String> configuracoes
+        - ConfiguracaoComMultiton()
+        + static ConfiguracaoComMultiton getInstance(String modulo)
+        + void adicionarConfiguracao(String chave, String valor)
+        + String obterConfiguracao(String chave)
+        + static Integer getSizeInstancias()
+        + static void main(String[] args)
+    }
+
+    ConfiguracaoComMultiton o-- "1..*" configuracaoComMultiton : INSTANCIAS
+
+    ConfiguracaoComMultiton ..> "1..*" Map : configuracoes
+
 ```
 
 ## Participantes
