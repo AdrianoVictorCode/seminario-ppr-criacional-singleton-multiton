@@ -455,8 +455,9 @@ public class Inimigo : MonoBehaviour
 }
 ```
 ### Exemplo de Multiton -Enum 
+
  - Tendo em vista que, o Enum é imutavel (em java) ele se enquadra como outro exemplo do padrão Multiton, uma vez que, cada constante de enum é, na prática, uma instância estática e única da própria classe. As instancias de enum's são estabelecidas em tempo de execução.
-Quem chama o enum fornece uma chave para o multion para obter a instância desejada.
+ Quem chama o enum fornece uma chave para o multion para obter a instância desejada.
 
  - **Problema** 
     - O sistema precisa calcular impostos (por exemplo, imposto de vendas e imposto sobre a terra) para várias regiões.
@@ -464,11 +465,77 @@ Quem chama o enum fornece uma chave para o multion para obter a instância desej
     - Cada vez que o sistema é invocado, ele recebe um conjunto de regiões para calcular os impostos, mas nem todas as regiões são necessárias de imediato.
     - Para evitar o custo de carregar todas as tarifas de todas as regiões, precisamos carregar as tarifas apenas quando elas forem solicitadas, mantendo uma cópia na memória para reutilização.
     - As regiões são fixas (NORTH, SOUTH, etc.), mas os algoritmos para cada região podem mudar dinamicamente.
+ 
  - **Solução com Multiton** 
     - Quando o sistema solicitar o cálculo de impostos para uma determinada região (por exemplo, NORTH), o sistema verificará se já existe uma instância associada a essa região.
-    - **Se a instância não existir**, o sistema a criará e carregará as tarifas de forma remota (isso pode ser demorado, mas só acontecerá uma vez).
-    - **Se a instância já existir**, o sistema reutilizará a instância já carregada, evitando o custo de reprocessamento.
+    - Se a instância não existir, o sistema a criará e carregará as tarifas de forma remota (isso pode ser demorado, mas só acontecerá uma vez).
+    - Se a instância já existir, o sistema reutilizará a instância já carregada, evitando o custo de reprocessamento.
     - Isso garante que para cada região (NORTH, SOUTH, etc.), haverá apenas uma única instância em memória, e o acesso será rápido para as chamadas subsequentes.
+
+
+#### Diagrama UML:
+```nermaid
+classDiagram
+    class TaxCalculation {
+        <<interface>>
+        + float calculateSalesTax(SaleData data)
+        + float calculateLandTax(LandData data)
+    }
+
+    class TaxRegion {
+        <<enumeration>>
+        + NORTH
+        + NORTH_EAST
+        + SOUTH
+        + EAST
+        + WEST
+        + CENTRAL
+        - Map~TaxRegion, TaxCalculation~ instances
+        - Map~String, Float~ regionalData
+        - synchronized static TaxCalculation getInstance(TaxRegion region)
+        - TaxCalculation loadRegionalDataFromRemoteServer()
+        + float calculateSalesTax(SaleData data)
+        + float calculateLandTax(LandData data)
+    }
+
+    class SaleData {
+        - float saleAmount
+        + SaleData(float saleAmount)
+        + float getSaleAmount()
+    }
+
+    class LandData {
+        - float landValue
+        + LandData(float landValue)
+        + float getLandValue()
+    }
+
+    TaxRegion -->|implements| TaxCalculation
+    TaxRegion --> "1..*" Map : instances
+    TaxRegion --> "1..*" Map : regionalData
+    SaleData --> TaxRegion : usa
+    LandData --> TaxRegion : usa
+```
+#### Diagrama de fluxo 
+
+```nermaid
+    participante Cliente
+    participante TaxRegion
+    participante ServidorRemoto
+    participante SaleData
+    
+    Cliente->>+TaxRegion: getInstance(NORTH)
+    alt Se a instância de NORTH não existir
+        TaxRegion->>+ServidorRemoto: loadRegionalDataFromRemoteServer()
+        ServidorRemoto-->>-TaxRegion: Dados Regionais (salesTaxRate, landTaxRate)
+        TaxRegion->>TaxRegion: Armazena instância no mapa "instances"
+    end
+    Cliente->>+SaleData: new SaleData(saleAmount)
+    Cliente->>TaxRegion: calculateSalesTax(SaleData)
+    TaxRegion->>TaxRegion: Obtém "salesTaxRate" de regionalData
+    TaxRegion-->>Cliente: Valor do imposto de vendas
+
+```
 
 #### Interface
 ```Java
@@ -477,6 +544,7 @@ public interface TaxCalculation {
     float calculateLandTax(LandData data);
 }
 ```
+#### Enum
 ```Java
 import java.util.HashMap;
 import java.util.Map;
@@ -532,7 +600,7 @@ public enum TaxRegion implements TaxCalculation {
 }
 
 ```
-#### Camada de dadeos 
+#### Camada de dados 
 ```java
 public class SaleData {
     private float saleAmount;
