@@ -456,7 +456,7 @@ public class Inimigo : MonoBehaviour
     }
 }
 ```
-### Exemplo de Multiton -Enum 
+#### Exemplo de Multiton -Enum 
 
  - Tendo em vista que, o Enum é imutavel (em java) ele se enquadra como outro exemplo do padrão Multiton, uma vez que, cada constante de enum é, na prática, uma instância estática e única da própria classe. As instancias de enum's são estabelecidas em tempo de execução.
  Quem chama o enum fornece uma chave para o multion para obter a instância desejada.
@@ -526,6 +526,14 @@ classDiagram
     LandData --> TaxRegion : usado por
 
 ```
+### Participantes
+- **SalesData e LandData**
+    - Camada de Dados que simulam os valores monetarios da Venda e da Terra.
+- **TaxCalculation**
+    - Interface responsavel por descrever os contratos (calculateSalesTax,calculateLandTax) a serem implementados no Enum(Tax Region)
+- **TaxRegion**
+    - Enum que contem: as chaves de instancia (NORTH, NORTH_EAST, SOUTH, WEST, CENTRAL) da mesma classe, o Map de instancias, do qual, receberá cada taxa de calculo associada a região solicidada,o Map RegionalData, que contem os dados relativos a taxa de calculo e a implementação dos contratos definidos na interface para retorar o valor de ambos os calculos solicitados (vendas e terras) levando em conta as unidades monetárias e os dados fornecidos do servidor.
+
 #### Diagrama de fluxo 
 
 ```mermaid
@@ -546,6 +554,9 @@ sequenceDiagram
     TaxRegion->>TaxRegion: Obtém "salesTaxRate" de regionalData
     TaxRegion-->>Cliente: Valor do imposto de vendas
 ```
+
+### Pseudocódigo do Exemplo 
+
 
 #### Interface
 ```Java
