@@ -322,24 +322,22 @@ public class ConfiguracaoComMultiton {
 - **Desvantagens**: Pode consumir mais memória ao criar múltiplas instâncias, dependendo de como as chaves são gerenciadas.
 
 
-#### Exemplo de Multiton -Enum 
+#### Exemplo de Multiton - Enum 
 
- - Tendo em vista que, o Enum é imutavel (em java) ele se enquadra como outro exemplo do padrão Multiton, uma vez que, cada constante de enum é, na prática, uma instância estática e única da própria classe. As instancias de enum's são estabelecidas em tempo de execução.
- Quem chama o enum fornece uma chave para o multion para obter a instância desejada.
+- Tendo em vista que, o Enum é imutável (em Java), ele se enquadra como outro exemplo do padrão Multiton, uma vez que cada constante de enum é, na prática, uma instância estática e única da própria classe. As instâncias de enums são estabelecidas em tempo de execução. Quem chama o enum fornece uma chave para o Multiton para obter a instância desejada.
 
- - **Problema** 
+- **Problema** 
     - O sistema precisa calcular impostos (por exemplo, imposto de vendas e imposto sobre a terra) para várias regiões.
     - Cada região tem seu próprio algoritmo de cálculo de imposto, e as tarifas específicas para cada região são carregadas de forma remota (o que é caro e demorado).
     - Cada vez que o sistema é invocado, ele recebe um conjunto de regiões para calcular os impostos, mas nem todas as regiões são necessárias de imediato.
     - Para evitar o custo de carregar todas as tarifas de todas as regiões, precisamos carregar as tarifas apenas quando elas forem solicitadas, mantendo uma cópia na memória para reutilização.
     - As regiões são fixas (NORTH, SOUTH, etc.), mas os algoritmos para cada região podem mudar dinamicamente.
  
- - **Solução com Multiton** 
+- **Solução com Multiton** 
     - Quando o sistema solicitar o cálculo de impostos para uma determinada região (por exemplo, NORTH), o sistema verificará se já existe uma instância associada a essa região.
     - Se a instância não existir, o sistema a criará e carregará as tarifas de forma remota (isso pode ser demorado, mas só acontecerá uma vez).
     - Se a instância já existir, o sistema reutilizará a instância já carregada, evitando o custo de reprocessamento.
     - Isso garante que para cada região (NORTH, SOUTH, etc.), haverá apenas uma única instância em memória, e o acesso será rápido para as chamadas subsequentes.
-
 
 #### Diagrama UML:
 ```mermaid
@@ -361,10 +359,8 @@ classDiagram
         + EAST
         + WEST
         + CENTRAL
-        - Map~TaxRegion, TaxCalculation~ instances
-        - Map~String, Float~ regionalData
-        + synchronized static TaxCalculation getInstance(TaxRegion region)
-        - TaxCalculation loadRegionalDataFromRemoteServer()
+        - float salesTaxRate
+        - float landTaxRate
         + float calculateSalesTax(SaleData data)
         + float calculateLandTax(LandData data)
     }
@@ -381,114 +377,68 @@ classDiagram
         + float getLandValue()
     }
 
-    %% Relacionamentos
-    TaxRegion o-- "1..*" TaxCalculation : instances
-    TaxRegion ..> "1..*" Map : regionalData
-
-    TaxRegion --> TaxCalculation : implements
-    TaxCalculation <|.. TaxRegion
-
-    SaleData --> TaxRegion : usado por
-    LandData --> TaxRegion : usado por
-
-```
-### Participantes
-- **SalesData e LandData**
-    - Camada de Dados que simulam os valores monetarios da Venda e da Terra.
-- **TaxCalculation**
-    - Interface responsavel por descrever os contratos (calculateSalesTax,calculateLandTax) a serem implementados no Enum(Tax Region)
-- **TaxRegion**
-    - Enum que contem: as chaves de instancia (NORTH, NORTH_EAST, SOUTH, WEST, CENTRAL) da mesma classe, o Map de instancias, do qual, receberá cada taxa de calculo associada a região solicidada,o Map RegionalData, que contem os dados relativos a taxa de calculo e a implementação dos contratos definidos na interface para retorar o valor de ambos os calculos solicitados (vendas e terras) levando em conta as unidades monetárias e os dados fornecidos do servidor.
-
-#### Diagrama de fluxo 
-
-```mermaid
-sequenceDiagram
-    participant Cliente
-    participant TaxRegion
-    participant ServidorRemoto
-    participant SaleData
-    
-    Cliente->>+TaxRegion: getInstance(NORTH)
-    alt Se a instância de NORTH não existir
-        TaxRegion->>+ServidorRemoto: loadRegionalDataFromRemoteServer()
-        ServidorRemoto-->>-TaxRegion: Dados Regionais (salesTaxRate, landTaxRate)
-        TaxRegion->>TaxRegion: Armazena instância no mapa "instances"
-    end
-    Cliente->>+SaleData: new SaleData(saleAmount)
-    Cliente->>TaxRegion: calculateSalesTax(SaleData)
-    TaxRegion->>TaxRegion: Obtém "salesTaxRate" de regionalData
-    TaxRegion-->>Cliente: Valor do imposto de vendas
+    TaxRegion --> TaxCalculation
+    SaleData --> TaxRegion
+    LandData --> TaxRegion
 ```
 
 ### Pseudocódigo do Exemplo 
 
-
 #### Interface
-```Java
+```java
+// /home/mrjabes/Documentos/ProjetosGithub/seminario-ppr-criacional-singleton-multiton/exemploenumvendasterras/TaxCalculation.java
+package exemploenumvendasterras;
+
+import exemploenumvendasterras.model.LandData;
+import exemploenumvendasterras.model.SaleData;
+
 public interface TaxCalculation {
     float calculateSalesTax(SaleData data);
     float calculateLandTax(LandData data);
 }
 ```
+
 #### Enum
-```Java
-import java.util.HashMap;
-import java.util.Map;
+```java
+// /home/mrjabes/Documentos/ProjetosGithub/seminario-ppr-criacional-singleton-multiton/exemploenumvendasterras/TaxRegion.java
+package exemploenumvendasterras;
+
+import exemploenumvendasterras.model.LandData;
+import exemploenumvendasterras.model.SaleData;
 
 public enum TaxRegion implements TaxCalculation {
-    NORTH, 
-    NORTH_EAST, 
-    SOUTH, 
-    EAST, 
-    WEST, 
-    CENTRAL;
+    NORTH(5.0f, 10.0f), 
+    NORTH_EAST(6.0f, 12.0f), 
+    SOUTH(4.0f, 8.0f), 
+    EAST(7.0f, 14.0f), 
+    WEST(5.5f, 11.0f), 
+    CENTRAL(6.5f, 13.0f);
 
-    // Mapa do Multiton para armazenar uma instância única de cada região
-    private static final Map<TaxRegion, TaxCalculation> instances = new HashMap<>();
+    private final float salesTaxRate;
+    private final float landTaxRate;
 
-    // Dados de tarifas específicas de cada região
-    private Map<String, Float> regionalData;
-
-    // Método para obter a instância (Multiton)
-    public static TaxCalculation getInstance(TaxRegion region) {
-        if (!instances.containsKey(region)) {
-            synchronized (TaxRegion.class) {
-                if (!instances.containsKey(region)) {
-                    TaxCalculation instance = region.loadRegionalDataFromRemoteServer();
-                    instances.put(region, instance);
-                }
-            }
-        }
-        return instances.get(region);
+    TaxRegion(float salesTaxRate, float landTaxRate) {
+        this.salesTaxRate = salesTaxRate;
+        this.landTaxRate = landTaxRate;
     }
 
-    // Simula o carregamento de dados regionais do servidor remoto
-    private TaxCalculation loadRegionalDataFromRemoteServer() {
-        System.out.println("Carregando dados para a região: " + this.name());
-        this.regionalData = new HashMap<>();
-        this.regionalData.put("salesTaxRate", (float) Math.random() * 10); // Simula a taxa de imposto de vendas
-        this.regionalData.put("landTaxRate", (float) Math.random() * 20);  // Simula a taxa de imposto de terras
-        return this;
-    }
-
-    // Implementações de cálculos de impostos (Exemplos simplificados)
     @Override
     public float calculateSalesTax(SaleData data) {
-        float rate = regionalData.getOrDefault("salesTaxRate", 0f);
-        return data.getSaleAmount() * rate / 100; // Cálculo do imposto de vendas
+        return data.getSaleAmount() * salesTaxRate / 100;
     }
 
     @Override
     public float calculateLandTax(LandData data) {
-        float rate = regionalData.getOrDefault("landTaxRate", 0f);
-        return data.getLandValue() * rate / 100; // Cálculo do imposto sobre terras
+        return data.getLandValue() * landTaxRate / 100;
     }
 }
-
 ```
+
 #### Camada de dados 
 ```java
+// /home/mrjabes/Documentos/ProjetosGithub/seminario-ppr-criacional-singleton-multiton/exemploenumvendasterras/model/SaleData.java
+package exemploenumvendasterras.model;
+
 public class SaleData {
     private float saleAmount;
 
@@ -500,6 +450,11 @@ public class SaleData {
         return saleAmount;
     }
 }
+```
+
+```java
+// /home/mrjabes/Documentos/ProjetosGithub/seminario-ppr-criacional-singleton-multiton/exemploenumvendasterras/model/LandData.java
+package exemploenumvendasterras.model;
 
 public class LandData {
     private float landValue;
@@ -513,23 +468,25 @@ public class LandData {
     }
 }
 ```
+
 #### Exemplo de uso Multiton
-```Java 
+```java
+// /home/mrjabes/Documentos/ProjetosGithub/seminario-ppr-criacional-singleton-multiton/exemploenumvendasterras/Main.java
+package exemploenumvendasterras;
+
+import exemploenumvendasterras.model.LandData;
+import exemploenumvendasterras.model.SaleData;
+
 public class Main {
     public static void main(String[] args) {
-        
         // Solicitar cálculos para duas regiões: NORTH e SOUTH
-        TaxCalculation northRegion = TaxRegion.getInstance(TaxRegion.NORTH);
-        TaxCalculation southRegion = TaxRegion.getInstance(TaxRegion.SOUTH);
-
         // Calcular imposto de vendas em ambas as regiões
-        SaleData sale = new SaleData(1000f); // Venda de 1000 unidades monetárias
-        System.out.println("Imposto de vendas na região NORTH: " + northRegion.calculateSalesTax(sale));
-        System.out.println("Imposto de vendas na região SOUTH: " + southRegion.calculateSalesTax(sale));
-
-        // Solicitar novamente a instância da região NORTH (não deve recarregar os dados)
-        TaxCalculation northAgain = TaxRegion.getInstance(TaxRegion.NORTH);
-        System.out.println("Reutilizando a instância de NORTH (imposto de vendas): " + northAgain.calculateSalesTax(sale));
+        // Venda de 1000 unidades monetárias
+        System.out.println("Imposto de vendas na região NORTH: " + TaxRegion.NORTH.calculateSalesTax(new SaleData(1000f)));
+        System.out.println("Imposto de vendas na região SOUTH: " + TaxRegion.SOUTH.calculateSalesTax(new SaleData(1000f)));
+        // Valor da terra de 5000 unidades monetárias
+        System.out.println("Imposto sobre terras na região NORTH: " + TaxRegion.NORTH.calculateLandTax(new LandData(5000f)));
+        System.out.println("Imposto sobre terras na região SOUTH: " + TaxRegion.SOUTH.calculateLandTax(new LandData(5000f)));
     }
 }
 ```
