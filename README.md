@@ -26,8 +26,17 @@ Quando se precisa de várias instâncias de uma classe, mas cada uma com um cont
 
 ### Exemplo de Aplicação do Multiton:
 
-- **Problema**: Um sistema de configuração com várias instâncias para diferentes módulos (ex.: módulo de pagamento, módulo de relatórios) precisa de um objeto único para cada módulo, mas cada um deve ser independente.
-- **Solução com Multiton**: O Multiton cria uma instância única para cada módulo, controlando a criação de instâncias de forma eficiente.
+- **Problema**: 
+    - O sistema precisa calcular impostos (por exemplo, imposto de vendas e imposto sobre a terra) para várias regiões.
+    - Cada região tem seu próprio algoritmo de cálculo de imposto, e as tarifas específicas para cada região são carregadas de forma remota (o que é caro e demorado).
+    - Cada vez que o sistema é invocado, ele recebe um conjunto de regiões para calcular os impostos, mas nem todas as regiões são necessárias de imediato.
+    - Para evitar o custo de carregar todas as tarifas de todas as regiões, precisamos carregar as tarifas apenas quando elas forem solicitadas, mantendo uma cópia na memória para reutilização.
+    - As regiões são fixas (NORTH, SOUTH, etc.), mas os algoritmos para cada região podem mudar dinamicamente.
+- **Solução com Multiton**: 
+    - Quando o sistema solicitar o cálculo de impostos para uma determinada região (por exemplo, NORTH), o sistema verificará se já existe uma instância associada a essa região.
+    - Se a instância não existir, o sistema a criará e carregará as tarifas de forma remota (isso pode ser demorado, mas só acontecerá uma vez).
+    - Se a instância já existir, o sistema reutilizará a instância já carregada, evitando o custo de reprocessamento.
+    - Isso garante que para cada região (NORTH, SOUTH, etc.), haverá apenas uma única instância em memória, e o acesso será rápido para as chamadas subsequentes.
 
 ## Aplicabilidade
 
@@ -59,24 +68,44 @@ classDiagram
 
 ```mermaid
 ---
-title: Multiton Configuração Exemplo
+title: Multiton Tax Calculation
 ---
 classDiagram
-    class ConfiguracaoComMultiton {
-        - Map<String, ConfiguracaoComMultiton> INSTANCIAS
-        - Map<String, String> configuracoes
-        - ConfiguracaoComMultiton()
-        + static ConfiguracaoComMultiton getInstance(String modulo)
-        + void adicionarConfiguracao(String chave, String valor)
-        + String obterConfiguracao(String chave)
-        + static Integer getSizeInstancias()
-        + static void main(String[] args)
+    class TaxCalculation {
+        <<interface>>
+        + float calculateSalesTax(SaleData data)
+        + float calculateLandTax(LandData data)
     }
 
-    ConfiguracaoComMultiton o-- "1..*" configuracaoComMultiton : INSTANCIAS
+    class TaxRegion {
+        <<enumeration>>
+        + NORTH
+        + NORTH_EAST
+        + SOUTH
+        + EAST
+        + WEST
+        + CENTRAL
+        - float salesTaxRate
+        - float landTaxRate
+        + float calculateSalesTax(SaleData data)
+        + float calculateLandTax(LandData data)
+    }
 
-    ConfiguracaoComMultiton ..> "1..*" Map : configuracoes
+    class SaleData {
+        - float saleAmount
+        + SaleData(float saleAmount)
+        + float getSaleAmount()
+    }
 
+    class LandData {
+        - float landValue
+        + LandData(float landValue)
+        + float getLandValue()
+    }
+
+    TaxRegion --> TaxCalculation
+    SaleData --> TaxRegion
+    LandData --> TaxRegion
 ```
 
 ## Participantes
@@ -87,11 +116,20 @@ classDiagram
 
 ### No diagrama do Multiton:
 
-- **ConfiguracaoComMultiton**: Gerencia múltiplas instâncias da classe com base em uma chave. Ele garante que cada chave única corresponde a uma única instância, permitindo compartilhar configurações específicas por módulo.
+- **TaxCalculation** *(Interface)*:
+    Responsável por fornecer uma interface que garante que qualquer implementação (neste caso, cada região fiscal) disponha dos métodos calculateSalesTax(SaleData data) e calculateLandTax(LandData data).
+    
+- **TaxRegion** *(Multiton/Enumeração)*:
+    Atua como o Multiton do sistema, representando um conjunto fixo e pré-definido de regiões fiscais (NORTH, NORTH_EAST, SOUTH, EAST, WEST, CENTRAL) e armazena as taxas específicas de imposto para vendas (salesTaxRate) e para terrenos (landTaxRate) para cada região.
+    
+    Ao utilizar um ENUM, o padrão garante que somente existam instâncias únicas e controladas para cada região, evitando a criação arbitrária de novos objetos.
 
-- **Instâncias**: Mantidas no mapa INSTANCIAS, que associa cada chave (String) a sua respectiva instância de ConfiguracaoComMultiton. Este mapa é o núcleo do padrão Multiton, garantindo controle centralizado das instâncias.
+- **SaleData** *(Dados de Venda)*:
+    Representa os dados de uma transação de venda, encapsulando o valor da venda (saleAmount).
+    Serve como parâmetro para o método de cálculo de imposto sobre vendas, permitindo que a instância de TaxRegion aplique sua taxa de imposto sobre o valor da venda.
 
-- **Configurações**: Dados armazenados dentro de cada instância em configuracoes. Este mapa contém pares chave-valor para configurações específicas ao contexto do módulo correspondente.
+- **LandData** *(Dados de Terreno)*:
+    Representa os dados de um terreno, encapsulando o valor do terreno (landValue). Serve como parâmetro para o método de cálculo de imposto sobre terrenos, possibilitando que a instância de TaxRegion utilize sua taxa de imposto específica para o cálculo.
 
 ## Outro Exemplo
 
@@ -194,199 +232,10 @@ public class Logger {
 
 ```
 
-### Sem Multiton:
-
-```java
-import java.util.HashMap;
-import java.util.Map;
-
-public class ConfiguracaoSemMultiton {
-    private String modulo;
-    private Map<String, String> configuracoes;
-
-    public ConfiguracaoSemMultiton(String modulo) {
-        this.modulo = modulo;
-        this.configuracoes = new HashMap<>();
-    }
-
-    public void adicionarConfiguracao(String chave, String valor) {
-        configuracoes.put(chave, valor);
-    }
-
-    public String obterConfiguracao(String chave) {
-        return configuracoes.get(chave);
-    }
-
-    public String getModulo() {
-        return modulo;
-    }
-
-    public static void main(String[] args) {
-        // Criando instâncias separadas para diferentes módulos
-        ConfiguracaoSemMultiton configPagamento = new ConfiguracaoSemMultiton("Pagamento");
-        configPagamento.adicionarConfiguracao("endpoint", "https://api.pagamentos.com");
-        configPagamento.adicionarConfiguracao("timeout", "30s");
-
-        ConfiguracaoSemMultiton configRelatorio = new ConfiguracaoSemMultiton("Relatorio");
-        configRelatorio.adicionarConfiguracao("endpoint", "https://api.relatorios.com");
-        configRelatorio.adicionarConfiguracao("timeout", "60s");
-
-        // Problema 1: Instâncias duplicadas podem ser criadas para o mesmo módulo
-        ConfiguracaoSemMultiton configPagamentoDuplicado = new ConfiguracaoSemMultiton("Pagamento");
-        configPagamentoDuplicado.adicionarConfiguracao("timeout", "15s");
-
-        // Problema 2: Não há controle centralizado das instâncias
-        System.out.println("Timeout do módulo Pagamento (instância 1): " + configPagamento.obterConfiguracao("timeout"));
-        System.out.println("Timeout do módulo Pagamento (instância duplicada): " + configPagamentoDuplicado.obterConfiguracao("timeout"));
-
-        // Problema 3: Difícil garantir que cada módulo tenha uma única configuração global
-        System.out.println("Endpoint do módulo Relatorio: " + configRelatorio.obterConfiguracao("endpoint"));
-    }
-}
-
-```
-
 ### Com Multiton:
-
-```java
-import java.util.HashMap;
-import java.util.Map;
-
-public class ConfiguracaoComMultiton {
-    private static final Map<String, ConfiguracaoComMultiton> INSTANCIAS = new HashMap<>();
-
-    private Map<String, String> configuracoes;
-
-    // Construtor privado para evitar instância externa
-    private ConfiguracaoComMultiton() {
-        this.configuracoes = new HashMap<>();
-    }
-
-    static {
-        INSTANCIAS.put("Pagamento", new ConfiguracaoComMultiton());
-
-        INSTANCIAS.put("Relatorio", new ConfiguracaoComMultiton());
-    }
-
-    // Método estático para obter a instância única de cada módulo
-    public static ConfiguracaoComMultiton getInstance(String modulo) {
-        return INSTANCIAS.get(modulo);
-    }
-
-    public void adicionarConfiguracao(String chave, String valor) {
-        configuracoes.put(chave, valor);
-    }
-
-    public String obterConfiguracao(String chave) {
-        return configuracoes.get(chave);
-    }
-
-    public static Integer getSizeInstancias() {
-        return INSTANCIAS.size();
-    }
-
-    public static void main(String[] args) {
-
-        // Garantindo que sempre obtemos a mesma instância para um módulo
-        ConfiguracaoComMultiton configPagamentoRef = ConfiguracaoComMultiton.getInstance("Pagamento");
-        configPagamentoRef.adicionarConfiguracao("timeout", "30s");
-        System.out.println("Timeout do módulo Pagamento (única instância): " + configPagamentoRef.obterConfiguracao("timeout"));
-   
-        // Sem duplicação de instâncias
-        ConfiguracaoComMultiton configRelatorioRef = ConfiguracaoComMultiton.getInstance("Relatorio");
-        configRelatorioRef.adicionarConfiguracao("endpoint", "/api/relatorio");
-        System.out.println("Endpoint do módulo Relatorio: " + configRelatorioRef.obterConfiguracao("endpoint"));
-   
-        // Todas as instâncias são controladas centralmente pelo Multiton
-        System.out.println("Número de módulos registrados: " + ConfiguracaoComMultiton.getSizeInstancias());
-    }
-   
-}
-```
-
-## Colaborações
-
-- **Singleton**: Colabora com a classe que precisa de uma instância única, garantindo que todas as requisições acessem a mesma instância.
-- **Multiton**: Colabora com a classe que precisa de diferentes instâncias dependendo de um contexto ou chave.
-
-## Consequências
-
-### Vantagens e Desvantagens do Singleton:
-
-- **Vantagens**: Controle total sobre a criação da instância, economizando recursos.
-- **Desvantagens**: Pode ser difícil de testar (por causa da instância única), além de ser potencialmente uma dependência global.
-
-### Vantagens e Desvantagens do Multiton:
-
-- **Vantagens**: Controla a criação de instâncias únicas por chave, sem redundâncias.
-- **Desvantagens**: Pode consumir mais memória ao criar múltiplas instâncias, dependendo de como as chaves são gerenciadas.
-
-
-#### Exemplo de Multiton - Enum 
-
-- Tendo em vista que, o Enum é imutável (em Java), ele se enquadra como outro exemplo do padrão Multiton, uma vez que cada constante de enum é, na prática, uma instância estática e única da própria classe. As instâncias de enums são estabelecidas em tempo de execução. Quem chama o enum fornece uma chave para o Multiton para obter a instância desejada.
-
-- **Problema** 
-    - O sistema precisa calcular impostos (por exemplo, imposto de vendas e imposto sobre a terra) para várias regiões.
-    - Cada região tem seu próprio algoritmo de cálculo de imposto, e as tarifas específicas para cada região são carregadas de forma remota (o que é caro e demorado).
-    - Cada vez que o sistema é invocado, ele recebe um conjunto de regiões para calcular os impostos, mas nem todas as regiões são necessárias de imediato.
-    - Para evitar o custo de carregar todas as tarifas de todas as regiões, precisamos carregar as tarifas apenas quando elas forem solicitadas, mantendo uma cópia na memória para reutilização.
-    - As regiões são fixas (NORTH, SOUTH, etc.), mas os algoritmos para cada região podem mudar dinamicamente.
- 
-- **Solução com Multiton** 
-    - Quando o sistema solicitar o cálculo de impostos para uma determinada região (por exemplo, NORTH), o sistema verificará se já existe uma instância associada a essa região.
-    - Se a instância não existir, o sistema a criará e carregará as tarifas de forma remota (isso pode ser demorado, mas só acontecerá uma vez).
-    - Se a instância já existir, o sistema reutilizará a instância já carregada, evitando o custo de reprocessamento.
-    - Isso garante que para cada região (NORTH, SOUTH, etc.), haverá apenas uma única instância em memória, e o acesso será rápido para as chamadas subsequentes.
-
-#### Diagrama UML:
-```mermaid
----
-title: Multiton Tax Calculation
----
-classDiagram
-    class TaxCalculation {
-        <<interface>>
-        + float calculateSalesTax(SaleData data)
-        + float calculateLandTax(LandData data)
-    }
-
-    class TaxRegion {
-        <<enumeration>>
-        + NORTH
-        + NORTH_EAST
-        + SOUTH
-        + EAST
-        + WEST
-        + CENTRAL
-        - float salesTaxRate
-        - float landTaxRate
-        + float calculateSalesTax(SaleData data)
-        + float calculateLandTax(LandData data)
-    }
-
-    class SaleData {
-        - float saleAmount
-        + SaleData(float saleAmount)
-        + float getSaleAmount()
-    }
-
-    class LandData {
-        - float landValue
-        + LandData(float landValue)
-        + float getLandValue()
-    }
-
-    TaxRegion --> TaxCalculation
-    SaleData --> TaxRegion
-    LandData --> TaxRegion
-```
-
-### Pseudocódigo do Exemplo 
 
 #### Interface
 ```java
-// /home/mrjabes/Documentos/ProjetosGithub/seminario-ppr-criacional-singleton-multiton/exemploenumvendasterras/TaxCalculation.java
 package exemploenumvendasterras;
 
 import exemploenumvendasterras.model.LandData;
@@ -400,7 +249,6 @@ public interface TaxCalculation {
 
 #### Enum
 ```java
-// /home/mrjabes/Documentos/ProjetosGithub/seminario-ppr-criacional-singleton-multiton/exemploenumvendasterras/TaxRegion.java
 package exemploenumvendasterras;
 
 import exemploenumvendasterras.model.LandData;
@@ -436,7 +284,6 @@ public enum TaxRegion implements TaxCalculation {
 
 #### Camada de dados 
 ```java
-// /home/mrjabes/Documentos/ProjetosGithub/seminario-ppr-criacional-singleton-multiton/exemploenumvendasterras/model/SaleData.java
 package exemploenumvendasterras.model;
 
 public class SaleData {
@@ -453,7 +300,6 @@ public class SaleData {
 ```
 
 ```java
-// /home/mrjabes/Documentos/ProjetosGithub/seminario-ppr-criacional-singleton-multiton/exemploenumvendasterras/model/LandData.java
 package exemploenumvendasterras.model;
 
 public class LandData {
@@ -469,9 +315,7 @@ public class LandData {
 }
 ```
 
-#### Exemplo de uso Multiton
 ```java
-// /home/mrjabes/Documentos/ProjetosGithub/seminario-ppr-criacional-singleton-multiton/exemploenumvendasterras/Main.java
 package exemploenumvendasterras;
 
 import exemploenumvendasterras.model.LandData;
@@ -490,6 +334,24 @@ public class Main {
     }
 }
 ```
+
+
+## Colaborações
+
+- **Singleton**: Colabora com a classe que precisa de uma instância única, garantindo que todas as requisições acessem a mesma instância.
+- **Multiton**: Colabora com a classe que precisa de diferentes instâncias dependendo de um contexto ou chave.
+
+## Consequências
+
+### Vantagens e Desvantagens do Singleton:
+
+- **Vantagens**: Controle total sobre a criação da instância, economizando recursos.
+- **Desvantagens**: Pode ser difícil de testar (por causa da instância única), além de ser potencialmente uma dependência global.
+
+### Vantagens e Desvantagens do Multiton:
+
+- **Vantagens**: Controla a criação de instâncias únicas por chave, sem redundâncias.
+- **Desvantagens**: Pode consumir mais memória ao criar múltiplas instâncias, dependendo de como as chaves são gerenciadas.
 
 ## Usos Conhecidos
 
