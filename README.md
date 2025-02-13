@@ -199,6 +199,7 @@ public class Logger {
 
     // Método público para obter a única instância do Logger
     public static Logger getInstance() {
+        //if (instanciaUnica == null){instanciaUnica = new Logger();}
         return instanciaUnica;
     }
 
