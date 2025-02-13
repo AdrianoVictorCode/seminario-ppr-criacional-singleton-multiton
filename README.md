@@ -347,12 +347,12 @@ public class Main {
 ### Vantagens e Desvantagens do Singleton:
 
 - **Vantagens**: Controle total sobre a criação da instância, economizando recursos.
-- **Desvantagens**: Pode ser difícil de testar (por causa da instância única), além de ser potencialmente uma dependência global.
+- **Desvantagens**: Pode ser difícil de testar (por causa da instância única), além de ser potencialmente uma dependência global o que quebra o princípio da Responsabilidade Única (SRP – Single Responsability Principle). Também dificulta na implementação de testes.
 
 ### Vantagens e Desvantagens do Multiton:
 
 - **Vantagens**: Controla a criação de instâncias únicas por chave, sem redundâncias.
-- **Desvantagens**: Pode consumir mais memória ao criar múltiplas instâncias, dependendo de como as chaves são gerenciadas.
+- **Desvantagens**: Pode consumir mais memória ao criar múltiplas instâncias, dependendo de como as chaves são gerenciadas. 
 
 ## Usos Conhecidos
 
