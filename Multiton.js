@@ -1,11 +1,5 @@
-/*
-Em um sistema grande, diferentes módulos (exemplo: banco de dados, interface gráfica, autenticação) 
-podem ter suas próprias configurações. O Multiton permite que cada módulo tenha uma única instância 
-de configuração, evitando recriação desnecessária e garantindo que tenha uma consistência bacana.
-*/
-
 class ConfigManager {
-    static instances = {}; // Armazena instâncias únicas para cada módulo
+    static instances = {}; 
 
     constructor(moduleName) {
         if (ConfigManager.instances[moduleName]) {
@@ -13,7 +7,7 @@ class ConfigManager {
         }
 
         this.moduleName = moduleName;
-        this.settings = {}; // Armazena as configurações do módulo
+        this.settings = {}; 
 
         ConfigManager.instances[moduleName] = this;
     }
@@ -27,7 +21,6 @@ class ConfigManager {
     }
 }
 
-// Criando configurações para diferentes módulos
 const dbConfig = new ConfigManager("database");
 dbConfig.setConfig("host", "localhost");
 dbConfig.setConfig("port", 5432);
@@ -39,13 +32,11 @@ uiConfig.setConfig("language", "en");
 const authConfig = new ConfigManager("auth");
 authConfig.setConfig("tokenExpiration", "1h");
 
-// Recuperando a mesma instância para "database"
 const dbConfigAgain = new ConfigManager("database");
-console.log(dbConfigAgain.getConfig("host")); // "localhost"
-console.log(dbConfigAgain === dbConfig); // true (mesma instância)
+console.log(dbConfigAgain.getConfig("host")); 
+console.log(dbConfigAgain === dbConfig); 
 
-// Recuperando a mesma instância para "ui"
 const uiConfigAgain = new ConfigManager("ui");
-console.log(uiConfigAgain.getConfig("theme")); // "dark"
+console.log(uiConfigAgain.getConfig("theme"));
 
-console.log(ConfigManager.instances); // Exibe todas as instâncias gerenciadas pelo Multiton
+console.log(ConfigManager.instances); 
